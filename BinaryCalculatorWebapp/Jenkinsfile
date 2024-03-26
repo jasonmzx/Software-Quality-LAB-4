@@ -65,5 +65,16 @@ spec:
         }
       }
     }
+
+    stage('Deploy to GKE') {
+      steps {
+        container('kubectl') {
+          script {
+            sh "gcloud container clusters get-credentials ${CLUSTER} --zone ${CLUSTER_ZONE} --project ${PROJECT}"
+            sh "kubectl set image deployment/${APP_NAME} ${APP_NAME}=${IMAGE_TAG} --record"
+          }
+        }
+      }
+    }
   }
 }
