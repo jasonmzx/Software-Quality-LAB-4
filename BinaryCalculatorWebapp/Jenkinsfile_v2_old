@@ -1,13 +1,14 @@
 pipeline {
-environment {
-  PROJECT = "valid-banner-415704"
-  APP_NAME = "binary-calculator2"
-  CLUSTER = "sofe3980u"
-  CLUSTER_ZONE = "northamerica-northeast1-b"
-  IMAGE_TAG = "gcr.io/${PROJECT}/${APP_NAME}"
-  JENKINS_CRED = "lab4-jenkins-deploy"
-}
-
+  environment {
+    //PROJECT = "REPLACE_WITH_YOUR_PROJECT_ID"
+	PROJECT = "lab4-jenkins-deploy"
+    APP_NAME = "binary-calculator2"
+	//CLUSTER = "REPLACE_WITH_YOUR_CLUSTER_NAME"
+    CLUSTER = "sofe3980u"
+    CLUSTER_ZONE = "northamerica-northeast1-b"
+    IMAGE_TAG = "gcr.io/${PROJECT}/${APP_NAME}"
+    JENKINS_CRED = "lab4-jenkins-deploy1"
+  }
   
 agent {
     kubernetes {
@@ -44,7 +45,7 @@ spec:
     stage ('Init') {
       steps {
 	    checkout scm
-        sh 'echo "Start of Job"'
+        sh 'echo "Start of Job (NEW SCRIPT)"'
       }
     }
     //stage ('test') {
@@ -64,23 +65,5 @@ spec:
         }
       }
     }
-
-stage('Deploy to GKE') {
-  steps {
-    container('kubectl') {
-      script {
-        sh 'echo "Deploying to GKE"'
-        sh "gcloud container clusters get-credentials ${CLUSTER} --zone ${CLUSTER_ZONE} --project ${PROJECT}"
-        // Debugging: List deployments
-        sh "kubectl get deployments"
-        // Attempt to update the deployment's image
-        sh "kubectl set image deployment/${APP_NAME} ${APP_NAME}=${IMAGE_TAG} --record"
-        // Debugging: Describe the deployment
-        sh "kubectl describe deployment ${APP_NAME}"
-      }
-    }
-  }
-}
-
   }
 }
