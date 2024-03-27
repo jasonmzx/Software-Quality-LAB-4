@@ -1,86 +1,37 @@
 pipeline {
-environment {
-  PROJECT = "valid-banner-415704"
-  APP_NAME = "binary-calculator2"
-  CLUSTER = "sofe3980u"
-  CLUSTER_ZONE = "northamerica-northeast1-b"
-  IMAGE_TAG = "gcr.io/${PROJECT}/${APP_NAME}"
-  JENKINS_CRED = "lab4-jenkins-deploy"
-}
-
-  
-agent {
-    kubernetes {
-	label 'sample-app'
-      defaultContainer 'jnlp'
-      yaml """
-apiVersion: v1
-kind: Pod
-metadata:
-labels:
-  component: ci
-spec:
-  # Use service account that can deploy to all namespaces
-  serviceAccountName: cd-jenkins
-  containers:
-  - name: gcloud
-    image: gcr.io/cloud-builders/gcloud
-    //image: google/cloud-sdk:latest
-    command:
-    - cat
-    tty: true
-  - name: kubectl
-    image: gcr.io/cloud-builders/kubectl
-    command:
-    - cat
-    tty: true
-"""
-}
-  }
+  agent any
   tools {
     maven 'maven' 
   }
   stages {
     stage ('Init') {
       steps {
-	    checkout scm
         sh 'echo "Start of Job"'
+        sh 'ls -la'
       }
     }
-    //stage ('test') {
-    //  steps {
-    //    sh 'mvn clean test -f ./BinaryCalculatorWebapp/pom.xml'
-    //  }
-    //}
+    stage ('test') {
+      steps {
+        sh 'mvn clean test -f ./BinaryCalculatorWebapp/pom.xml'
+      }
+    }
     stage ('build') {
       steps {
         sh 'mvn package -DskipTests -f ./BinaryCalculatorWebapp/pom.xml'
       }
     }
-    stage('Build and push image with Container Builder') {
+    stage ('Deploy') {
       steps {
-        container('gcloud') {
-          sh "/builder/google-cloud-sdk/bin/gcloud builds submit -t ${IMAGE_TAG} ./BinaryCalculatorWebapp/"
+        script {
+          // Assuming you have a Docker image ready for deployment
+          // For example, if your image is named "binary-calculator2:latest"
+          // and is available in your Docker registry
+          sh '''
+            kubectl set image deployment/binarycalculator binarycalculator=yourdockerhubuser/binary-calculator2:latest --record
+            kubectl rollout status deployment/binarycalculator
+          '''
         }
       }
     }
-
-stage('Deploy to GKE') {
-  steps {
-    container('kubectl') {
-      script {
-        sh 'echo "Deploying to GKE"'
-        sh "gcloud container clusters get-credentials ${CLUSTER} --zone ${CLUSTER_ZONE} --project ${PROJECT}"
-        // Debugging: List deployments
-        sh "kubectl get deployments"
-        // Attempt to update the deployment's image
-        sh "kubectl set image deployment/${APP_NAME} ${APP_NAME}=${IMAGE_TAG} --record"
-        // Debugging: Describe the deployment
-        sh "kubectl describe deployment ${APP_NAME}"
-      }
-    }
-  }
-}
-
   }
 }
